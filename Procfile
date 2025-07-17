@@ -1,1 +1,1 @@
-worker: python mezmur_bot.py
+worker: python bot.py
