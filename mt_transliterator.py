@@ -4,6 +4,7 @@ from telegram import Update, InlineQueryResultArticle, InputTextMessageContent
 from telegram.ext import Application, CommandHandler, MessageHandler, filters, ContextTypes, InlineQueryHandler
 from telegram.constants import ParseMode
 import uuid
+from dotenv import load_dotenv
 
 # Set up logging
 logging.basicConfig(
@@ -288,11 +289,13 @@ async def inline_query(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
 def main() -> None:
     """Start the bot."""
     # Replace 'YOUR_BOT_TOKEN' with your actual bot token
-    BOT_TOKEN = os.getenv('7998740397:AAG1i0cY0B_gWdBDCY1sdZW4dJZVTEtX5ck', '7998740397:AAG1i0cY0B_gWdBDCY1sdZW4dJZVTEtX5ck')
+    BOT_TOKEN = os.getenv('7998740397:AAG1i0cY0B_gWdBDCY1sdZW4dJZVTEtX5ck')
     
     if BOT_TOKEN == '7998740397:AAG1i0cY0B_gWdBDCY1sdZW4dJZVTEtX5ck':
         print("❌ Please set your BOT_TOKEN environment variable or replace it in the code!")
         return
+    load_dotenv()
+    BOT_TOKEN = os.getenv('BOT_TOKEN')
     
     # Create the Application
     application = Application.builder().token(BOT_TOKEN).build()
