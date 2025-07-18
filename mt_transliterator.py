@@ -295,7 +295,7 @@ def main() -> None:
         print("❌ Please set your BOT_TOKEN environment variable or replace it in the code!")
         return
     load_dotenv()
-    BOT_TOKEN = os.getenv('BOT_TOKEN')
+    BOT_TOKEN = os.getenv('7998740397:AAG1i0cY0B_gWdBDCY1sdZW4dJZVTEtX5ck')
     
     # Create the Application
     application = Application.builder().token(BOT_TOKEN).build()
