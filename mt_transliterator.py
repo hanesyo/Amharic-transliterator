@@ -288,9 +288,9 @@ async def inline_query(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
 def main() -> None:
     """Start the bot."""
     # Replace 'YOUR_BOT_TOKEN' with your actual bot token
-    BOT_TOKEN = os.getenv('BOT_TOKEN', 'YOUR_BOT_TOKEN')
+    BOT_TOKEN = os.getenv('7998740397:AAG1i0cY0B_gWdBDCY1sdZW4dJZVTEtX5ck', '7998740397:AAG1i0cY0B_gWdBDCY1sdZW4dJZVTEtX5ck')
     
-    if BOT_TOKEN == 'YOUR_BOT_TOKEN':
+    if BOT_TOKEN == '7998740397:AAG1i0cY0B_gWdBDCY1sdZW4dJZVTEtX5ck':
         print("❌ Please set your BOT_TOKEN environment variable or replace it in the code!")
         return
     
