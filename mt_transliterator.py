@@ -4,11 +4,7 @@ from telegram import Update, InlineQueryResultArticle, InputTextMessageContent
 from telegram.ext import Application, CommandHandler, MessageHandler, filters, ContextTypes, InlineQueryHandler
 from telegram.constants import ParseMode
 import uuid
-from dotenv import load_dotenv
 import asyncio
-
-# Load environment variables first
-load_dotenv()
 
 # Set up logging with less verbose output
 logging.basicConfig(
