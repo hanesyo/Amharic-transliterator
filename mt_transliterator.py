@@ -1,5 +1,6 @@
 import logging
 import os
+import re
 from telegram import Update, InlineQueryResultArticle, InputTextMessageContent
 from telegram.ext import Application, CommandHandler, MessageHandler, filters, ContextTypes, InlineQueryHandler
 from telegram.constants import ParseMode
@@ -142,19 +143,39 @@ CONSONANT_CLUSTERS = {
 PREFIXES_WITH_APOSTROPHE = ['le', 'ye', 'be', 'ke', 'ma', 'me', 'e', 'a', 'te', 's', 'en', 'ya', 'y']
 
 def transliterate_amharic(amharic_text):
-    """Enhanced transliteration function."""
+    """Transliterate Amharic text while preserving original formatting (spacing, indentation, line breaks)."""
     if not amharic_text:
         return ""
-    
-    # Character-by-character transliteration
+
     result = []
     for char in amharic_text:
         transliterated_char = AMHARIC_MAP.get(char, char)
         result.append(transliterated_char)
-    
-    # Join and apply post-processing
+
+    # Don't join with ' '.join — just join directly to preserve spacing
     transliterated = ''.join(result)
-    return apply_post_processing_rules(transliterated)
+
+    # Now apply post-processing rules, but avoid stripping formatting
+    return apply_post_processing_rules_preserving_formatting(transliterated)
+
+def apply_post_processing_rules_preserving_formatting(text):
+    """Post-process text while preserving all original spacing and line breaks."""
+    # Do NOT collapse whitespace
+    # Instead process word-by-word while keeping spacing/indentation
+
+    tokens = re.split(r'(\s+)', text)  # Keeps all spaces/newlines/tabs as separate tokens
+    processed_tokens = []
+
+    for token in tokens:
+        if not token.strip():  # It's just whitespace (space, tab, newline), preserve as is
+            processed_tokens.append(token)
+        else:
+            word = process_word_structure(token)
+            word = apply_prefix_apostrophe_rules(word)
+            processed_tokens.append(word)
+
+    return ''.join(processed_tokens)
+
 
 def apply_post_processing_rules(text):
     """Apply post-processing rules for better transliteration."""
@@ -165,26 +186,26 @@ def apply_post_processing_rules(text):
     for pattern, replacement in CONSONANT_CLUSTERS.items():
         text = text.replace(pattern, replacement)
     
-    # Handle word boundaries and vowel insertion
-    words = text.split()
+    # Split text more carefully - handle compound words
+    # Look for word boundaries (spaces, punctuation, numbers)
+    import re
+    words = re.split(r'(\s+|[.,;:!?/\d]+)', text)
     processed_words = []
     
     for word in words:
-        # Preserve punctuation
-        punctuation = ""
-        clean_word = word
-        
-        if word and word[-1] in ".,;:!?":
-            punctuation = word[-1]
-            clean_word = word[:-1]
-        
-        # Process the clean word
-        processed_word = process_word_structure(clean_word)
-        # Apply prefix apostrophe rules
-        processed_word = apply_prefix_apostrophe_rules(processed_word)
-        processed_words.append(processed_word + punctuation)
+        # Skip whitespace and punctuation
+        if not word or word.isspace() or not any(c.isalpha() for c in word):
+            processed_words.append(word)
+            continue
+            
+        # Process the word
+        processed_word = process_word_structure(word)
+        # Apply prefix apostrophe rules only to actual words
+        if len(processed_word) > 1 and any(c.isalpha() for c in processed_word):
+            processed_word = apply_prefix_apostrophe_rules(processed_word)
+        processed_words.append(processed_word)
     
-    return ' '.join(processed_words)
+    return ''.join(processed_words)
 
 def apply_prefix_apostrophe_rules(word):
     """Apply prefix apostrophe rules to a word."""
@@ -192,20 +213,26 @@ def apply_prefix_apostrophe_rules(word):
         return word
     
     # Check if word starts with any of the specified prefixes
-    for prefix in PREFIXES_WITH_APOSTROPHE:
-        if word.startswith(prefix):
-            # Add apostrophe after the prefix
-            new_word = prefix + "'" + word[len(prefix):]
-            
-            # Check if there's an 'i' right after the apostrophe that should be deleted
-            # The 'i' should be deleted if it's not the first letter in the original word
-            if (len(new_word) > len(prefix) + 1 and 
-                new_word[len(prefix) + 1] == 'i' and 
-                len(prefix) > 0):  # Ensure the 'i' is not the first letter
-                # Delete the 'i'
-                new_word = new_word[:len(prefix) + 1] + new_word[len(prefix) + 2:]
-            
-            return new_word
+    # Sort prefixes by length (longest first) to avoid partial matches
+    sorted_prefixes = sorted(PREFIXES_WITH_APOSTROPHE, key=len, reverse=True)
+    
+    for prefix in sorted_prefixes:
+        if word.startswith(prefix) and len(word) > len(prefix):
+            # Make sure the prefix is actually a complete prefix (not part of a longer word)
+            rest_of_word = word[len(prefix):]
+            if rest_of_word:  # There must be something after the prefix
+                # Add apostrophe after the prefix
+                new_word = prefix + "'" + rest_of_word
+                
+                # Check if there's an 'i' right after the apostrophe that should be deleted
+                # The 'i' should be deleted if it's not the first letter in the original word
+                if (len(rest_of_word) > 0 and 
+                    rest_of_word[0] == 'i' and 
+                    len(prefix) > 0):  # Ensure the 'i' is not the first letter
+                    # Delete the 'i'
+                    new_word = prefix + "'" + rest_of_word[1:]
+                
+                return new_word
     
     return word
 
@@ -217,27 +244,27 @@ def process_word_structure(word):
     # Handle specific patterns
     processed = word
     
-    # Remove standalone vowels at word boundaries in certain contexts
-    if processed.startswith('e') and len(processed) > 2:
-        # Check if it's actually እ at the beginning
-        processed = processed[1:]  # Remove the 'e' from እ
+    # Don't remove 'e' from እ at the beginning - it's important
+    # Only remove it in specific contexts
     
-    # Handle consonant-vowel patterns
+    # Handle consonant-vowel patterns more carefully
     if len(processed) >= 3:
-        # Insert vowels in consonant clusters if needed
+        # Insert vowels in consonant clusters if needed, but be more conservative
         new_word = ""
         i = 0
         while i < len(processed):
             new_word += processed[i]
             
-            # Look ahead for consonant clusters
+            # Look ahead for consonant clusters, but be more selective
             if (i < len(processed) - 2 and 
-                processed[i] not in 'aeiou' and 
-                processed[i+1] not in 'aeiou' and 
-                processed[i+2] not in 'aeiou'):
-                # Insert 'i' between consonants in clusters
-                if processed[i:i+3] not in ['ndr', 'mpl', 'str', 'shr']:
-                    new_word += 'i'
+                processed[i] not in 'aeiou\'' and 
+                processed[i+1] not in 'aeiou\'' and 
+                processed[i+2] not in 'aeiou\''):
+                # Only insert 'i' for specific patterns, not all clusters
+                cluster = processed[i:i+3]
+                if cluster not in ['ndr', 'mpl', 'str', 'shr', 'nkb', 'mgb', 'lnk']:
+                    # Be even more conservative - only add 'i' for very specific cases
+                    pass  # Skip automatic 'i' insertion for now
             i += 1
         processed = new_word
     
