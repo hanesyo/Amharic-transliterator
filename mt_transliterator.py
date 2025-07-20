@@ -142,6 +142,18 @@ CONSONANT_CLUSTERS = {
 # Prefixes that should get apostrophes
 PREFIXES_WITH_APOSTROPHE = ['le', 'ye', 'be', 'ke', 'ma', 'me', 'e', 'a', 'te', 's', 'en', 'ya', 'y']
 
+def has_amharic_content(text):
+    """Check if text contains Amharic characters."""
+    if not text:
+        return False
+    
+    # Check for any Amharic Unicode ranges
+    for char in text:
+        # Ethiopic script Unicode range (U+1200–U+137F)
+        if '\u1200' <= char <= '\u137F':
+            return True
+    return False
+
 def transliterate_amharic(amharic_text):
     """Transliterate Amharic text while preserving original formatting (spacing, indentation, line breaks)."""
     if not amharic_text:
@@ -270,7 +282,90 @@ def process_word_structure(word):
     
     return processed
 
-# Bot handlers (unchanged from your original)
+def create_inline_results(original_query, transliterated, has_amharic):
+    """Create comprehensive inline results with multiple options."""
+    results = []
+    
+    if has_amharic and transliterated != original_query:
+        # Primary result - clean transliteration
+        results.append(
+            InlineQueryResultArticle(
+                id=str(uuid.uuid4()),
+                title=f"✅ {transliterated}",
+                description=f"Transliterated: {original_query}",
+                input_message_content=InputTextMessageContent(
+                    message_text=transliterated
+                )
+            )
+        )
+        
+        # Alternative result - with original text
+        results.append(
+            InlineQueryResultArticle(
+                id=str(uuid.uuid4()),
+                title=f"📝 With Original",
+                description=f"{original_query} → {transliterated}",
+                input_message_content=InputTextMessageContent(
+                    message_text=f"{original_query} → {transliterated}"
+                )
+            )
+        )
+        
+        # Code format result (useful for sharing)
+        results.append(
+            InlineQueryResultArticle(
+                id=str(uuid.uuid4()),
+                title=f"💻 Code Format",
+                description=f"`{transliterated}`",
+                input_message_content=InputTextMessageContent(
+                    message_text=f"`{transliterated}`",
+                    parse_mode=ParseMode.MARKDOWN
+                )
+            )
+        )
+        
+        # If the transliterated text is long, offer a shortened preview
+        if len(transliterated) > 50:
+            preview = transliterated[:47] + "..."
+            results.append(
+                InlineQueryResultArticle(
+                    id=str(uuid.uuid4()),
+                    title=f"📄 Preview",
+                    description=f"Short preview: {preview}",
+                    input_message_content=InputTextMessageContent(
+                        message_text=preview
+                    )
+                )
+            )
+    
+    else:
+        # No Amharic detected
+        results.append(
+            InlineQueryResultArticle(
+                id=str(uuid.uuid4()),
+                title="⚠️ No Amharic Detected",
+                description="Please type some Amharic text to transliterate",
+                input_message_content=InputTextMessageContent(
+                    message_text="Please type some Amharic text to transliterate. Example: ሰላም"
+                )
+            )
+        )
+        
+        # Provide example
+        results.append(
+            InlineQueryResultArticle(
+                id=str(uuid.uuid4()),
+                title="📚 Example: ሰላም",
+                description="Try typing: ሰላም",
+                input_message_content=InputTextMessageContent(
+                    message_text="s'elam"
+                )
+            )
+        )
+    
+    return results
+
+# Bot handlers
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Send a message when the command /start is issued."""
     welcome_message = """
@@ -280,7 +375,7 @@ I can help you transliterate Amharic text to Latin script.
 
 *How to use:*
 • Send me any Amharic text and I'll transliterate it
-• Use inline mode: type `@yourbotname` followed by Amharic text in any chat
+• Use inline mode: type `@amharic_transliterator_bot` followed by Amharic text in any chat
 • Send /help for more information
 
 *Example:*
@@ -291,9 +386,10 @@ Send: `ልጅ`
 Get: `l'j`
 
 *Enhanced Features:*
-• Automatic apostrophe insertion after prefixes
-• Smart 'i' deletion rules
-• Improved accuracy
+• Improved Grammar
+• Formatting Support
+• Multiple inline result options
+• Better error handling
 
 Try it now! Send me some Amharic text 👇
     """
@@ -311,13 +407,13 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
 
 *How to use:*
 1. *Direct message*: Send Amharic text directly to this bot
-2. *Inline mode*: Type `@yourbotname` in any chat followed by Amharic text
+2. *Inline mode*: Type `@amharic_transliterator_bot` in any chat followed by Amharic text.
 
-*Enhanced Features:*
-• Apostrophe insertion after these prefixes: le, ye, be, ke, ma, me, e, a, te, s, en, ya, y
-• Smart 'i' deletion when appropriate
-• Improved consonant cluster handling
-• Works with long texts and multiple words
+*Inline Features:*
+• Multiple result options (clean, with original, code format)
+• Better error handling for non-Amharic text
+• Preview options for long text
+• Examples when no Amharic is detected
 
 *Examples:*
 • `ለሰላም` → `le'salam`
@@ -333,22 +429,15 @@ async def about(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     about_text = """
 ℹ️ *About Amharic Transliterator Bot*
 
-This bot transliterates Amharic (አማርኛ) text to Latin script, making it easier to read and share Amharic content across different platforms.
+This bot transliterates Amharic (አማርኛ) text to Latin script(a'margna), making it easier to read and share Amharic content across different platforms.
 
-*Enhanced Features:*
-• Accurate transliteration using enhanced mapping rules
-• Automatic apostrophe insertion after specific prefixes
-• Smart vowel deletion rules
-• Support for all Amharic characters including special forms
-• Intelligent post-processing for better readability
-• Inline mode for use in any chat
-• Proper handling of punctuation and spacing
+*Enhanced inline mode features:*
+• Multiple result options
+• Better Amharic detection
+• Formatting preservation
+• Smart error handling
 
-*New Prefix Rules:*
-• Adds apostrophe after: le, ye, be, ke, ma, me, e, a, te, s, en, ya, y
-• Deletes 'i' in specific contexts for better accuracy
-
-🙏 *Thank you for using our enhanced bot!*
+🙏 *Thank you for using my bot!*
     """
     await update.message.reply_text(about_text, parse_mode=ParseMode.MARKDOWN)
 
@@ -366,14 +455,16 @@ async def transliterate_message(update: Update, context: ContextTypes.DEFAULT_TY
         transliterated = transliterate_amharic(original_text)
         
         # Check if there's any actual Amharic content to transliterate
-        if transliterated != original_text:
+        has_amharic = has_amharic_content(original_text)
+        
+        if has_amharic and transliterated != original_text:
             # Edit the processing message with the result
             await processing_message.edit_text(transliterated)
         else:
             # Edit the processing message with a helpful message
             await processing_message.edit_text(
                 "I didn't detect any Amharic text to transliterate. "
-                "Please send me some Amharic text!"
+                "Please send me some Amharic text! Example: ሰላም"
             )
     except Exception as e:
         logger.error(f"Error transliterating message: {e}")
@@ -387,31 +478,70 @@ async def transliterate_message(update: Update, context: ContextTypes.DEFAULT_TY
             )
 
 async def inline_query(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    """Handle inline queries for transliteration."""
-    query = update.inline_query.query
+    """Enhanced inline query handler with better transliteration and multiple result options."""
+    query = update.inline_query.query.strip()
     
+    # If query is empty, show helpful instructions
     if not query:
-        return
-    
-    try:
-        # Transliterate the query
-        transliterated = transliterate_amharic(query)
-        
-        # Create inline result
         results = [
             InlineQueryResultArticle(
                 id=str(uuid.uuid4()),
-                title=f"Transliterate: {query}",
-                description=f"Result: {transliterated}",
+                title="🇪🇹 Amharic Transliterator",
+                description="Type Amharic text to transliterate...",
                 input_message_content=InputTextMessageContent(
-                    message_text=transliterated
+                    message_text="Type some Amharic text after @amharic_transliterator_bot to transliterate it!\n\nExample: @amharic_transliterator_bot ሰላም"
+                )
+            ),
+            InlineQueryResultArticle(
+                id=str(uuid.uuid4()),
+                title="📝 Example: ሰላም",
+                description="Example transliteration",
+                input_message_content=InputTextMessageContent(
+                    message_text="s'elam"
                 )
             )
         ]
         
-        await update.inline_query.answer(results, cache_time=300)
+        await update.inline_query.answer(results, cache_time=300, is_personal=True)
+        return
+    
+    try:
+        # Check if the query contains Amharic
+        has_amharic = has_amharic_content(query)
+        
+        # Transliterate the query using the same enhanced method as direct messages
+        transliterated = transliterate_amharic(query)
+        
+        # Create comprehensive results
+        results = create_inline_results(query, transliterated, has_amharic)
+        
+        # Answer the inline query with enhanced options
+        await update.inline_query.answer(
+            results, 
+            cache_time=300, 
+            is_personal=True,
+            switch_pm_text="💬 Chat with bot",
+            switch_pm_parameter="inline_help"
+        )
+        
     except Exception as e:
         logger.error(f"Error in inline query: {e}")
+        # Fallback error result
+        error_results = [
+            InlineQueryResultArticle(
+                id=str(uuid.uuid4()),
+                title="❌ Error",
+                description="Something went wrong. Please try again.",
+                input_message_content=InputTextMessageContent(
+                    message_text="Sorry, there was an error processing your request. Please try again or contact support."
+                )
+            )
+        ]
+        
+        try:
+            await update.inline_query.answer(error_results, cache_time=30)
+        except:
+            pass  # If we can't even send the error, just log it
 
 def main() -> None:
     """Start the bot."""
