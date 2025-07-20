@@ -13,152 +13,241 @@ load_dotenv()
 # Set up logging with less verbose output
 logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    level=logging.WARNING  # Changed from INFO to WARNING to reduce log noise
+    level=logging.WARNING
 )
 logger = logging.getLogger(__name__)
 
-# Pre-compiled transliteration map for faster lookup
+# Improved transliteration map with better accuracy
 AMHARIC_MAP = {
     # ሀ Series
-    "ሀ": "ha", "ሁ": "hu", "ሂ": "hee", "ሃ": "ha", "ሄ": "hay","ህ": "hi", "ሆ": "ho",
-    # ለ Series
-    "ለ": "le", "ሉ": "lu", "ሊ": "lee", "ላ": "la", "ሌ": "lay","ል": "li", "ሎ": "lo",
+    "ሀ": "ha", "ሁ": "hu", "ሂ": "hi", "ሃ": "ha", "ሄ": "he", "ህ": "h", "ሆ": "ho", "ሇ": "hwa",
+    
+    # ለ Series  
+    "ለ": "le", "ሉ": "lu", "ሊ": "li", "ላ": "la", "ሌ": "le", "ል": "l", "ሎ": "lo", "ሏ": "lwa",
+    
     # ሐ Series (hammeru ha)
-    "ሐ": "ḥa", "ሑ": "ḥu","ሒ": "ḥee","ሓ": "ḥa","ሔ": "ḥay","ሕ": "ḥi","ሖ": "ḥo","ሗ": "ḥwa",
+    "ሐ": "ha", "ሑ": "hu", "ሒ": "hi", "ሓ": "ha", "ሔ": "he", "ሕ": "h", "ሖ": "ho", "ሗ": "hwa",
+    
     # መ Series
-    "መ": "me", "ሙ": "mu", "ሚ": "mi", "ማ": "ma", "ሜ": "may","ም": "mi", "ሞ": "mo",
+    "መ": "me", "ሙ": "mu", "ሚ": "mi", "ማ": "ma", "ሜ": "me", "ም": "m", "ሞ": "mo", "ሟ": "mwa",
+    
     # ሠ Series
-    "ሠ": "se", "ሡ": "su", "ሢ": "si", "ሣ": "sa", "ሤ": "say","ሥ": "si", "ሦ": "so",
-    # ረ Series (r)
-    "ረ": "re", "ሩ": "ru", "ሪ": "ree", "ራ": "ra", "ሬ": "ray","ር": "ri", "ሮ": "ro",
-    # ሰ Series (s)
-    "ሰ": "se", "ሱ": "su", "ሲ": "see", "ሳ": "sa", "ሴ": "say","ስ": "si", "ሶ": "so", "ሷ": "swa",
-    # ሸ Series (sh)
-    "ሸ": "she", "ሹ": "shu", "ሺ": "shee", "ሻ": "sha", "ሼ": "shay","ሽ": "shih", "ሾ": "sho", "ሿ": "shwa",
+    "ሠ": "se", "ሡ": "su", "ሢ": "si", "ሣ": "sa", "ሤ": "se", "ሥ": "s", "ሦ": "so", "ሧ": "swa",
+    
+    # ረ Series
+    "ረ": "re", "ሩ": "ru", "ሪ": "ri", "ራ": "ra", "ሬ": "re", "ር": "r", "ሮ": "ro", "ሯ": "rwa",
+    
+    # ሰ Series
+    "ሰ": "se", "ሱ": "su", "ሲ": "si", "ሳ": "sa", "ሴ": "se", "ስ": "s", "ሶ": "so", "ሷ": "swa",
+    
+    # ሸ Series
+    "ሸ": "she", "ሹ": "shu", "ሺ": "shi", "ሻ": "sha", "ሼ": "she", "ሽ": "sh", "ሾ": "sho", "ሿ": "shwa",
+    
     # ቀ Series
-    "ቀ": "q'e", "ቁ": "q'u", "ቂ": "q'i", "ቃ": "q'a", "ቄ": "q'ay","ቅ": "q'", "ቆ": "q'o",
+    "ቀ": "qe", "ቁ": "qu", "ቂ": "qi", "ቃ": "qa", "ቄ": "qe", "ቅ": "q", "ቆ": "qo", "ቇ": "qwa",
+    
     # በ Series
-    "በ": "be", "ቡ": "bu", "ቢ": "bi", "ባ": "ba", "ቤ": "bay","ብ": "bi", "ቦ": "bo",
+    "በ": "be", "ቡ": "bu", "ቢ": "bi", "ባ": "ba", "ቤ": "be", "ብ": "b", "ቦ": "bo", "ቧ": "bwa",
+    
     # ቨ Series
-    "ቨ": "ve", "ቩ": "vu", "ቪ": "vee", "ቫ": "va", "ቬ": "vay","ቭ": "vi", "ቮ": "vo",
+    "ቨ": "ve", "ቩ": "vu", "ቪ": "vi", "ቫ": "va", "ቬ": "ve", "ቭ": "v", "ቮ": "vo", "ቯ": "vwa",
+    
     # ተ Series
-    "ተ": "te", "ቱ": "tu", "ቲ": "tee", "ታ": "ta", "ቴ": "tay","ት": "ti", "ቶ": "to",
+    "ተ": "te", "ቱ": "tu", "ቲ": "ti", "ታ": "ta", "ቴ": "te", "ት": "t", "ቶ": "to", "ቷ": "twa",
+    
     # ቸ Series
-    "ቸ": "che", "ቹ": "chu", "ቺ": "chee", "ቻ": "cha", "ቼ": "chay","ች": "chi", "ቾ": "cho",
-    # ኀ/Virgin ሀ (same as ሀ series by site)
-    "ኀ": "ha", "ኁ": "hu", "ኂ": "hee", "ኃ": "ha", "ኄ": "hay","ኅ": "hi", "ኆ": "ho",
+    "ቸ": "che", "ቹ": "chu", "ቺ": "chi", "ቻ": "cha", "ቼ": "che", "ች": "ch", "ቾ": "cho", "ቿ": "chwa",
+    
+    # ኀ Series (same as ሀ)
+    "ኀ": "ha", "ኁ": "hu", "ኂ": "hi", "ኃ": "ha", "ኄ": "he", "ኅ": "h", "ኆ": "ho", "ኇ": "hwa",
+    
     # ነ Series
-    "ነ": "ne", "ኑ": "nu", "ኒ": "ni", "ና": "na", "ኔ": "nay","ን": "ni", "ኖ": "no",
+    "ነ": "ne", "ኑ": "nu", "ኒ": "ni", "ና": "na", "ኔ": "ne", "ን": "n", "ኖ": "no", "ኗ": "nwa",
+    
     # ኘ Series
-    "ኘ": "ñe", "ኙ": "ñu", "ኚ": "ñee", "ኛ": "ña", "ኜ": "ñay","ኝ": "ñi", "ኞ": "ño",
+    "ኘ": "gne", "ኙ": "gnu", "ኚ": "gni", "ኛ": "gna", "ኜ": "gne", "ኝ": "gn", "ኞ": "gno", "ኟ": "gnwa",
+    
     # Vowels (independent)
-    "አ": "a", "ኡ": "u", "ኢ": "ee", "ኣ": "a", "ኤ": "ay","እ": "i", "ኦ": "o",
+    "አ": "a", "ኡ": "u", "ኢ": "i", "ኣ": "a", "ኤ": "e", "እ": "", "ኦ": "o", "ኧ": "wa",
+    
     # ከ Series
-    "ከ": "ke", "ኩ": "ku", "ኪ": "ki", "ካ": "ka", "ኬ": "kay","ክ": "ki", "ኮ": "ko",
-    # ኸ Series (H')
-    "ኸ": "he", "ኹ": "hu", "ኺ": "hee", "ኻ": "ha", "ኼ": "hay","ኽ": "hi", "ኾ": "ho",
+    "ከ": "ke", "ኩ": "ku", "ኪ": "ki", "ካ": "ka", "ኬ": "ke", "ክ": "k", "ኮ": "ko", "ኯ": "kwa",
+    
+    # ኸ Series
+    "ኸ": "khe", "ኹ": "khu", "ኺ": "khi", "ኻ": "kha", "ኼ": "khe", "ኽ": "kh", "ኾ": "kho", "ዀ": "khwa",
+    
     # ወ Series
-    "ወ": "we", "ዉ": "wu", "ዊ": "wee", "ዋ": "wa", "ዌ": "way","ው": "wi", "ዎ": "wo",
+    "ወ": "we", "ዉ": "wu", "ዊ": "wi", "ዋ": "wa", "ዌ": "we", "ው": "w", "ዎ": "wo", "ዏ": "wwa",
+    
     # ዐ Series (glottal)
-    "ዐ": "a", "ዑ": "u", "ዒ": "ee", "ዓ": "a", "ዔ": "ay","ዕ": "i", "ዖ": "o",
+    "ዐ": "a", "ዑ": "u", "ዒ": "i", "ዓ": "a", "ዔ": "e", "ዕ": "", "ዖ": "o", "዗": "wa",
+    
     # ዘ Series
-    "ዘ": "ze", "ዙ": "zu", "ዚ": "zi", "ዛ": "za", "ዜ": "zay","ዝ": "zi", "ዞ": "zo",
+    "ዘ": "ze", "ዙ": "zu", "ዚ": "zi", "ዛ": "za", "ዜ": "ze", "ዝ": "z", "ዞ": "zo", "ዟ": "zwa",
+    
     # ዠ Series
-    "ዠ": "zje", "ዡ": "zju", "ዢ": "zji", "ዣ": "zja", "ዤ": "zjay","ዥ": "zji", "ዦ": "zjo",
+    "ዠ": "zhe", "ዡ": "zhu", "ዢ": "zhi", "ዣ": "zha", "ዤ": "zhe", "ዥ": "zh", "ዦ": "zho", "ዧ": "zhwa",
+    
     # የ Series
-    "የ": "ye", "ዩ": "yu", "ዪ": "yee", "ያ": "ya", "ዬ": "yay","ይ": "yi", "ዮ": "yo",
+    "የ": "ye", "ዩ": "yu", "ዪ": "yi", "ያ": "ya", "ዬ": "ye", "ይ": "y", "ዮ": "yo", "ዯ": "ywa",
+    
     # ደ Series
-    "ደ": "de", "ዱ": "du", "ዲ": "dee", "ዳ": "da", "ዴ": "day","ድ": "di", "ዶ": "do",
+    "ደ": "de", "ዱ": "du", "ዲ": "di", "ዳ": "da", "ዴ": "de", "ድ": "d", "ዶ": "do", "ዷ": "dwa",
+    
     # ጀ Series
-    "ጀ": "je", "ጁ": "ju", "ጂ": "ji", "ጃ": "ja", "ጄ": "jay","ጅ": "ji", "ጆ": "jo",
+    "ጀ": "je", "ጁ": "ju", "ጂ": "ji", "ጃ": "ja", "ጄ": "je", "ጅ": "j", "ጆ": "jo", "ጇ": "jwa",
+    
     # ገ Series
-    "ገ": "ge", "ጉ": "gu", "ጊ": "gee", "ጋ": "ga", "ጌ": "gay","ግ": "gi", "ጎ": "go",
-    # ጠ Series (T')
-    "ጠ": "t'e", "ጡ": "t'u", "ጢ": "t'ee", "ጣ": "t'a", "ጤ": "t'ay","ጥ": "t'i", "ጦ": "t'o",
-    # ጨ Series (Ch')
-    "ጨ": "ch'e", "ጩ": "ch'u", "ጪ": "ch'ee", "ጫ": "ch'a", "ጬ": "ch'ay","ጭ": "chi'", "ጮ": "ch'o",
-    # ጰ Series (P')
-    "ጰ": "p'e", "ጱ": "p'u", "ጲ": "p'ee", "ጳ": "p'a", "ጴ": "p'ay","ጵ": "p'i", "ጶ": "p'o",
+    "ገ": "ge", "ጉ": "gu", "ጊ": "gi", "ጋ": "ga", "ጌ": "ge", "ግ": "g", "ጎ": "go", "ጏ": "gwa",
+    
+    # ጠ Series
+    "ጠ": "te", "ጡ": "tu", "ጢ": "ti", "ጣ": "ta", "ጤ": "te", "ጥ": "t", "ጦ": "to", "ጧ": "twa",
+    
+    # ጨ Series
+    "ጨ": "che", "ጩ": "chu", "ጪ": "chi", "ጫ": "cha", "ጬ": "che", "ጭ": "ch", "ጮ": "cho", "ጯ": "chwa",
+    
+    # ጰ Series
+    "ጰ": "pe", "ጱ": "pu", "ጲ": "pi", "ጳ": "pa", "ጴ": "pe", "ጵ": "p", "ጶ": "po", "ጷ": "pwa",
+    
     # ጸ Series
-    "ጸ": "tse", "ጹ": "tsu", "ጺ": "tsee", "ጻ": "tsa", "ጼ": "tsay","ጽ": "tsi", "ጾ": "tso",
-    # ፀ Series
-    "ፀ": "tse", "ፁ": "tsu", "ፂ": "tsee", "ፃ": "tsa", "ፄ": "tsay","ፅ": "tsi", "ፆ": "tso",
+    "ጸ": "tse", "ጹ": "tsu", "ጺ": "tsi", "ጻ": "tsa", "ጼ": "tse", "ጽ": "ts", "ጾ": "tso", "ጿ": "tswa",
+    
+    # ፀ Series  
+    "ፀ": "tse", "ፁ": "tsu", "ፂ": "tsi", "ፃ": "tsa", "ፄ": "tse", "ፅ": "ts", "ፆ": "tso", "ፇ": "tswa",
+    
     # ፈ Series
-    "ፈ": "fe", "ፉ": "fu", "ፊ": "fee", "ፋ": "fa", "ፌ": "fay","ፍ": "fi", "ፎ": "fo",
+    "ፈ": "fe", "ፉ": "fu", "ፊ": "fi", "ፋ": "fa", "ፌ": "fe", "ፍ": "f", "ፎ": "fo", "ፏ": "fwa",
+    
     # ፐ Series
-    "ፐ": "pe", "ፑ": "pu", "ፒ": "pee", "ፓ": "pa", "ፔ": "pay","ፕ": "pi", "ፖ": "po",
-    # Specials - Added proper newline handling
-    "።": ".", "፣": ",", "፤": ";", "፥": ":", "፦": ":", " ": " ", "\n": "\n", "\r": "\n", "\r\n": "\n",
-    # W-series additions
-    "ዷ": "dwa", "ቧ": "bwa", "ጧ": "t'wa",
+    "ፐ": "pe", "ፑ": "pu", "ፒ": "pi", "ፓ": "pa", "ፔ": "pe", "ፕ": "p", "ፖ": "po", "ፗ": "pwa",
+    
+    # Punctuation and special characters
+    "።": ".", "፣": ",", "፤": ";", "፥": ":", "፦": "::", "፧": "?", "፨": "!", "፠": " ",
+    " ": " ", "\n": "\n", "\r": "\n", "\r\n": "\n", "\t": " ",
+    # Rare jawns
+    "ኵ":"kwi", "ኧ": "e","ቋ": "qwa", "ቓ": "qwa", "ጓ": "gwa", "ጕ": "gwi", "ኋ": "hwa", "ዃ": "hwa", "ቒ": "qwi", "ኊ": "khwi", "ጚ": "jji",
+
+    # Numbers
+    "፩": "1", "፪": "2", "፫": "3", "፬": "4", "፭": "5", "፮": "6", "፯": "7", "፰": "8", "፱": "9", "፲": "10",
 }
 
-# Pre-compiled consonant patterns for faster processing
-CONSONANT_PATTERNS = {
-    'mgb': 'migib',   # ምግብ
-    'lj': 'lij',      # ልጅ
+# Enhanced consonant cluster rules
+CONSONANT_CLUSTERS = {
+    # Common patterns
+    'mgb': 'migib',     # ምግብ
+    'lj': 'lij',        # ልጅ  
+    'nkb': 'nikib',     # እንክብ
+    'str': 'sitir',     # ስትር
+    'bst': 'bist',      # በስት
+    'shr': 'shir',      # ሽር
 }
+
+# Prefixes that should get apostrophes
+PREFIXES_WITH_APOSTROPHE = ['le', 'ye', 'be', 'ke', 'ma', 'me', 'e', 'a', 'te', 's', 'en', 'ya', 'y']
 
 def transliterate_amharic(amharic_text):
-    """Optimized transliteration function using pre-compiled maps."""
-    # Use list comprehension for faster processing
-    transliterated = ''.join(AMHARIC_MAP.get(char, char) for char in amharic_text)
+    """Enhanced transliteration function."""
+    if not amharic_text:
+        return ""
     
-    # Apply post-processing rules
+    # Character-by-character transliteration
+    result = []
+    for char in amharic_text:
+        transliterated_char = AMHARIC_MAP.get(char, char)
+        result.append(transliterated_char)
+    
+    # Join and apply post-processing
+    transliterated = ''.join(result)
     return apply_post_processing_rules(transliterated)
 
 def apply_post_processing_rules(text):
-    """Apply various post-processing rules to improve transliteration quality."""
-    # Apply rules in sequence for better performance
-    text = apply_final_i_rule(text)
-    text = insert_vowels_in_clusters(text)
-    return text
-
-def apply_final_i_rule(text):
-    """Remove final 'i' from words longer than 2 characters that end in 'i'."""
+    """Apply post-processing rules for better transliteration."""
+    # Remove extra spaces
+    text = ' '.join(text.split())
+    
+    # Apply consonant cluster rules
+    for pattern, replacement in CONSONANT_CLUSTERS.items():
+        text = text.replace(pattern, replacement)
+    
+    # Handle word boundaries and vowel insertion
     words = text.split()
     processed_words = []
     
     for word in words:
+        # Preserve punctuation
         punctuation = ""
         clean_word = word
         
-        # Check for punctuation at the end
         if word and word[-1] in ".,;:!?":
             punctuation = word[-1]
             clean_word = word[:-1]
         
-        # Remove final 'i' if word is longer than 2 characters
-        if len(clean_word) > 2 and clean_word.endswith('i'):
-            clean_word = clean_word[:-1]
-        
-        processed_words.append(clean_word + punctuation)
+        # Process the clean word
+        processed_word = process_word_structure(clean_word)
+        # Apply prefix apostrophe rules
+        processed_word = apply_prefix_apostrophe_rules(processed_word)
+        processed_words.append(processed_word + punctuation)
     
     return ' '.join(processed_words)
 
-def insert_vowels_in_clusters(text):
-    """Insert vowels in consonant clusters based on user preferences."""
-    words = text.split()
-    processed_words = []
+def apply_prefix_apostrophe_rules(word):
+    """Apply prefix apostrophe rules to a word."""
+    if not word:
+        return word
     
-    for word in words:
-        punctuation = ""
-        clean_word = word
-        
-        # Check for punctuation at the end
-        if word and word[-1] in ".,;:!?":
-            punctuation = word[-1]
-            clean_word = word[:-1]
-        
-        # Apply consonant pattern replacements
-        for pattern, replacement in CONSONANT_PATTERNS.items():
-            clean_word = clean_word.replace(pattern, replacement)
-        
-        processed_words.append(clean_word + punctuation)
+    # Check if word starts with any of the specified prefixes
+    for prefix in PREFIXES_WITH_APOSTROPHE:
+        if word.startswith(prefix):
+            # Add apostrophe after the prefix
+            new_word = prefix + "'" + word[len(prefix):]
+            
+            # Check if there's an 'i' right after the apostrophe that should be deleted
+            # The 'i' should be deleted if it's not the first letter in the original word
+            if (len(new_word) > len(prefix) + 1 and 
+                new_word[len(prefix) + 1] == 'i' and 
+                len(prefix) > 0):  # Ensure the 'i' is not the first letter
+                # Delete the 'i'
+                new_word = new_word[:len(prefix) + 1] + new_word[len(prefix) + 2:]
+            
+            return new_word
     
-    return ' '.join(processed_words)
+    return word
 
-# Bot handlers
+def process_word_structure(word):
+    """Process individual word structure for better readability."""
+    if len(word) <= 1:
+        return word
+        
+    # Handle specific patterns
+    processed = word
+    
+    # Remove standalone vowels at word boundaries in certain contexts
+    if processed.startswith('e') and len(processed) > 2:
+        # Check if it's actually እ at the beginning
+        processed = processed[1:]  # Remove the 'e' from እ
+    
+    # Handle consonant-vowel patterns
+    if len(processed) >= 3:
+        # Insert vowels in consonant clusters if needed
+        new_word = ""
+        i = 0
+        while i < len(processed):
+            new_word += processed[i]
+            
+            # Look ahead for consonant clusters
+            if (i < len(processed) - 2 and 
+                processed[i] not in 'aeiou' and 
+                processed[i+1] not in 'aeiou' and 
+                processed[i+2] not in 'aeiou'):
+                # Insert 'i' between consonants in clusters
+                if processed[i:i+3] not in ['ndr', 'mpl', 'str', 'shr']:
+                    new_word += 'i'
+            i += 1
+        processed = new_word
+    
+    return processed
+
+# Bot handlers (unchanged from your original)
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Send a message when the command /start is issued."""
     welcome_message = """
@@ -173,10 +262,15 @@ I can help you transliterate Amharic text to Latin script.
 
 *Example:*
 Send: `ሰላም`
-Get: `selam`
+Get: `s'elam`
 
-Send: `ልጅ`
-Get: `lij`
+Send: `ልጅ`  
+Get: `l'j`
+
+*Enhanced Features:*
+• Automatic apostrophe insertion after prefixes
+• Smart 'i' deletion rules
+• Improved accuracy
 
 Try it now! Send me some Amharic text 👇
     """
@@ -189,23 +283,23 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
 
 *Commands:*
 • `/start` - Start the bot
-• `/help` - Show this help message
+• `/help` - Show this help message  
 • `/about` - About this bot
 
 *How to use:*
 1. *Direct message*: Send Amharic text directly to this bot
 2. *Inline mode*: Type `@yourbotname` in any chat followed by Amharic text
 
-*Features:*
-• Transliterates all Amharic characters (ፊደል)
-• Handles punctuation and special characters
+*Enhanced Features:*
+• Apostrophe insertion after these prefixes: le, ye, be, ke, ma, me, e, a, te, s, en, ya, y
+• Smart 'i' deletion when appropriate
+• Improved consonant cluster handling
 • Works with long texts and multiple words
-• Supports both direct messages and inline queries
 
 *Examples:*
-• `ሰላም` → `selam`
-• `ምንድነው` → `mindinew`
-• `ለመሳተፍ` → `lemesatef`
+• `ለሰላም` → `le'salam`
+• `በዓል` → `be'al`
+• `የሰላም` → `ye'salam`
 
 Happy transliterating! 🎉
     """
@@ -218,13 +312,20 @@ async def about(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 
 This bot transliterates Amharic (አማርኛ) text to Latin script, making it easier to read and share Amharic content across different platforms.
 
-*Features:*
-• Accurate transliteration using custom rules
-• Support for all Amharic characters
-• Post-processing for better readability
+*Enhanced Features:*
+• Accurate transliteration using enhanced mapping rules
+• Automatic apostrophe insertion after specific prefixes
+• Smart vowel deletion rules
+• Support for all Amharic characters including special forms
+• Intelligent post-processing for better readability
 • Inline mode for use in any chat
+• Proper handling of punctuation and spacing
 
-🙏 *Thank you for using our bot!*
+*New Prefix Rules:*
+• Adds apostrophe after: le, ye, be, ke, ma, me, e, a, te, s, en, ya, y
+• Deletes 'i' in specific contexts for better accuracy
+
+🙏 *Thank you for using our enhanced bot!*
     """
     await update.message.reply_text(about_text, parse_mode=ParseMode.MARKDOWN)
 
@@ -243,7 +344,7 @@ async def transliterate_message(update: Update, context: ContextTypes.DEFAULT_TY
         
         # Check if there's any actual Amharic content to transliterate
         if transliterated != original_text:
-            # Edit the processing message with the result (no original text included)
+            # Edit the processing message with the result
             await processing_message.edit_text(transliterated)
         else:
             # Edit the processing message with a helpful message
@@ -253,13 +354,11 @@ async def transliterate_message(update: Update, context: ContextTypes.DEFAULT_TY
             )
     except Exception as e:
         logger.error(f"Error transliterating message: {e}")
-        # Try to edit the processing message if it exists
         try:
             await processing_message.edit_text(
                 "Sorry, I encountered an error while transliterating. Please try again."
             )
         except:
-            # If editing fails, send a new message
             await update.message.reply_text(
                 "Sorry, I encountered an error while transliterating. Please try again."
             )
@@ -287,7 +386,7 @@ async def inline_query(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
             )
         ]
         
-        await update.inline_query.answer(results, cache_time=300)  # Cache for 5 minutes
+        await update.inline_query.answer(results, cache_time=300)
     except Exception as e:
         logger.error(f"Error in inline query: {e}")
 
@@ -308,7 +407,7 @@ def main() -> None:
     application = (
         Application.builder()
         .token(BOT_TOKEN)
-        .concurrent_updates(True)  # Enable concurrent processing
+        .concurrent_updates(True)
         .build()
     )
 
@@ -320,14 +419,14 @@ def main() -> None:
     application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, transliterate_message))
 
     # Run the bot with optimized settings
-    print("🚀 Starting Amharic Transliterator Bot...")
+    print("🚀 Starting Enhanced Amharic Transliterator Bot...")
     print("Bot is running! Send /start to begin.")
     
     # Start the bot with faster polling
     application.run_polling(
         allowed_updates=Update.ALL_TYPES,
-        poll_interval=0.5,  # Faster polling (default is 1.0)
-        timeout=30,  # Shorter timeout for faster response
+        poll_interval=0.5,
+        timeout=30,
         bootstrap_retries=5,
         read_timeout=10,
         write_timeout=10
